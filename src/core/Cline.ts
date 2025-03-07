@@ -10,6 +10,7 @@ import getFolderSize from "get-folder-size"
 import * as path from "path"
 import { serializeError } from "serialize-error"
 import * as vscode from "vscode"
+import { TextEditor, WorkspaceFolder, TabGroup, Tab, Uri } from 'vscode'
 
 import { ApiHandler, buildApiHandler } from "../api"
 import { ApiStream } from "../api/transform/stream"
@@ -72,8 +73,7 @@ import crypto from "crypto"
 import { insertGroups } from "./diff/insert-groups"
 import { OutputBuilder } from "../integrations/terminal/OutputBuilder"
 
-const cwd =
-	vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0) ?? path.join(os.homedir(), "Desktop") // may or may not exist but fs checking existence would immediately ask for permission which would be bad UX, need to come up with a better solution
+const cwd = vscode.workspace.workspaceFolders?.map((folder: WorkspaceFolder) => folder.uri.fsPath).at(0) ?? path.join(os.homedir(), "Desktop")
 
 type ToolResponse = string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam>
 type UserContent = Array<Anthropic.Messages.ContentBlockParam>
@@ -946,7 +946,7 @@ export class Cline {
 		let builder = new OutputBuilder({ maxSize: terminalOutputLimit })
 		let output: string | undefined = undefined
 
-		process.on("line", (line) => {
+		process.on("line", (line: string) => {
 			builder.append(line)
 
 			if (!didContinue) {
@@ -1334,6 +1334,8 @@ export class Cline {
 							const modeName = getModeBySlug(mode, customModes)?.name ?? mode
 							return `[${block.name} in ${modeName} mode: '${message}']`
 						}
+						default:
+							return `[${block.name}]`
 					}
 				}
 
@@ -1599,7 +1601,7 @@ export class Cline {
 												"Potential code truncation detected. This happens when the AI reaches its max output limit.",
 												"Follow this guide to fix the issue",
 											)
-											.then((selection) => {
+											.then((selection: string | undefined) => {
 												if (selection === "Follow this guide to fix the issue") {
 													vscode.env.openExternal(
 														vscode.Uri.parse(
@@ -3429,14 +3431,14 @@ export class Cline {
 		// It could be useful for cline to know if the user went from one or no file to another between messages, so we always include this context
 		details += "\n\n# VSCode Visible Files"
 		const visibleFilePaths = vscode.window.visibleTextEditors
-			?.map((editor) => editor.document?.uri?.fsPath)
+			?.map((editor: TextEditor) => editor.document?.uri?.fsPath)
 			.filter(Boolean)
-			.map((absolutePath) => path.relative(cwd, absolutePath))
+			.map((absolutePath: string) => path.relative(cwd, absolutePath))
 
 		// Filter paths through rooIgnoreController
 		const allowedVisibleFiles = this.rooIgnoreController
 			? this.rooIgnoreController.filterPaths(visibleFilePaths)
-			: visibleFilePaths.map((p) => p.toPosix()).join("\n")
+			: visibleFilePaths.map((p: string) => p.toPosix()).join("\n")
 
 		if (allowedVisibleFiles) {
 			details += `\n${allowedVisibleFiles}`
@@ -3448,10 +3450,10 @@ export class Cline {
 		const { maxOpenTabsContext } = (await this.providerRef.deref()?.getState()) ?? {}
 		const maxTabs = maxOpenTabsContext ?? 20
 		const openTabPaths = vscode.window.tabGroups.all
-			.flatMap((group) => group.tabs)
-			.map((tab) => (tab.input as vscode.TabInputText)?.uri?.fsPath)
+			.flatMap((group: TabGroup) => group.tabs)
+			.map((tab: Tab) => (tab.input as vscode.TabInputText)?.uri?.fsPath)
 			.filter(Boolean)
-			.map((absolutePath) => path.relative(cwd, absolutePath).toPosix())
+			.map((absolutePath: string) => path.relative(cwd, absolutePath).toPosix())
 			.slice(0, maxTabs)
 
 		// Filter paths through rooIgnoreController
@@ -3649,7 +3651,7 @@ export class Cline {
 		}
 
 		try {
-			const workspaceDir = vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0)
+			const workspaceDir = vscode.workspace.workspaceFolders?.map((folder: WorkspaceFolder) => folder.uri.fsPath).at(0)
 
 			if (!workspaceDir) {
 				log("[Cline#initializeCheckpoints] workspace folder not found, disabling checkpoints")

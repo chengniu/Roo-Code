@@ -163,3 +163,12 @@ ${await addCustomInstructions(promptComponent?.customInstructions || currentMode
 		rooIgnoreInstructions,
 	)
 }
+
+export function createClineAPI(outputChannel: vscode.OutputChannel, sidebarProvider: ClineProvider): ClineAPI {
+	// Creates the public API for other extensions to interact with Roo Code
+	// Provides methods for:
+	// - Custom instructions management
+	// - Task management
+	// - Message sending
+	// - Button interactions
+}
